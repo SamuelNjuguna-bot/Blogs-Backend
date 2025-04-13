@@ -17,8 +17,21 @@ lastName String @map("last_name")
 username String @map("user_name") @unique
 email String @map("email_address")
 password String 
+blog Blog[]
 createdAt DateTime @default(now())
 
-
 @@map("user1")
+}
+
+model Blog{
+  blogId String @default(uuid()) @id
+  title String  @map("blog_title")
+  description String @map("blog_description")
+  content String @map("blog_content")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("Updated_At")
+  authorId    String
+  user        User     @relation(fields: [authorId], references: [id])
+
+  @@map("blogs")
 }
