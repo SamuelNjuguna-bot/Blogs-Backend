@@ -45,7 +45,7 @@ app.post("/signup", Validate, async (req, res) => {
 app.post("/login", async (req, res) => {
   const { identifier, password } = req.body;
 
-  const foundIdentifier = await prisma.User.findFirst({
+  var foundIdentifier = await prisma.User.findFirst({
     where: {
       OR: [{ username: identifier }, { email: identifier }],
     },
@@ -83,7 +83,6 @@ app.post("/login", async (req, res) => {
 app.post("/createblog", verify, async (req, res) => {
   const { title, description, content } = req.body;
   const { userId } = req.user;
-  console.log(userId, title, description, content);
   try {
     const createdBlog = await prisma.blog.create({
       data: {
@@ -93,11 +92,35 @@ app.post("/createblog", verify, async (req, res) => {
         authorId: userId,
       },
     });
-    res.status(201).json({ message: "Your Blog was successfuly created" });
+    const blogId = createdBlog.blogId
+    res.status(201).json({ message: "Your Blog was successfuly created", blogId});
   } catch (e) {
     res.status(500).json({ message: "Something Went Wrong" });
   }
 });
+
+
+
+app.get("/articles/:id",verify, async(req, res)=>{
+   const {id} = req.params
+  const blog_data = await prisma.blog.findFirst({
+    where: {
+      blogId:id
+    }
+   })
+   if(blog_data){
+    res.status(201).json({
+      blog_data
+     })
+   }
+   else{
+    res.status(500).json({
+      mesage:"Someting went wrong"
+     })
+   }
+})
+
+
 
 app.listen(3000, () => {
   console.log("server running on port 3000...");
