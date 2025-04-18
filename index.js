@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import verify from "./prisma/middlewares/verifyUser.js";
 
 import cors from "cors";
+import { Select } from "@mui/material";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -81,46 +82,76 @@ app.post("/login", async (req, res) => {
 });
 
 app.post("/createblog", verify, async (req, res) => {
-  const { title, description, content } = req.body;
+  const { title, description, content, saveImage } = req.body;
   const { userId } = req.user;
   try {
     const createdBlog = await prisma.blog.create({
       data: {
+        saveImage,
         title,
         description,
         content,
         authorId: userId,
       },
     });
-    const blogId = createdBlog.blogId
-    res.status(201).json({ message: "Your Blog was successfuly created", blogId});
+    const blogId = createdBlog.blogId;
+    res
+      .status(201)
+      .json({ message: "Your Blog was successfuly created", blogId });
   } catch (e) {
     res.status(500).json({ message: "Something Went Wrong" });
   }
 });
 
-
-
-app.get("/articles/:id",verify, async(req, res)=>{
-   const {id} = req.params
+app.get("/articles/:id", verify, async (req, res) => {
+  const { id } = req.params;
   const blog_data = await prisma.blog.findFirst({
     where: {
-      blogId:id
-    }
-   })
-   if(blog_data){
+      blogId: id,
+    },
+  });
+  if (blog_data) {
     res.status(201).json({
-      blog_data
-     })
-   }
-   else{
+      blog_data,
+    });
+  } else {
     res.status(500).json({
-      mesage:"Someting went wrong"
-     })
-   }
-})
+      mesage: "Someting went wrong",
+    });
+  }
+});
 
+app.get("/bloglisting", verify, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const fetched_Posts = await prisma.blog.findMany({
+      where: { id },
+      select: {
+        blogId: true,
+        title: true,
+        description: true,
+        content: true,
+        saveImage: true,
+        updatedAt: true,
+        user: {
+          select: {
+            firstName: true,
+            id: true,
+          },
+        },
+      },
+    });
+    res.status(200).json({
+      data: [fetched_Posts],
+    });
+  } catch (e) {
+    res.status(500).json({ message: "something went wrong...." });
+  }
+});
 
+app.get("/myblogs/:id", verify, (req, res) => {
+  res.status(200).json({ message: "Connected out successfully" });
+});
 
 app.listen(3000, () => {
   console.log("server running on port 3000...");
