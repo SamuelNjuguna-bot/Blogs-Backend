@@ -5,7 +5,7 @@ import bcrypt from "bcrypt";
 import Validate from "./middlewares/validateUser.js";
 import jwt from "jsonwebtoken";
 import verify from "./prisma/middlewares/verifyUser.js";
-
+import getUserId from "./middlewares/getUserId.js";
 import cors from "cors";
 import { Select } from "@mui/material";
 
@@ -121,11 +121,12 @@ app.get("/articles/:id", verify, async (req, res) => {
   }
 });
 
-app.get("/bloglisting", verify, async (req, res) => {
+app.get("/bloglisting/:id", [verify, getUserId], async (req, res) => {
   const { id } = req.params;
+  const userId = req.body.userId;
   try {
     const fetched_Posts = await prisma.blog.findMany({
-      where: { id },
+      where: { blogId: id },
       select: {
         blogId: true,
         title: true,
@@ -142,15 +143,72 @@ app.get("/bloglisting", verify, async (req, res) => {
       },
     });
     res.status(200).json({
-      data: [fetched_Posts],
+      data: [fetched_Posts, userId],
     });
   } catch (e) {
     res.status(500).json({ message: "something went wrong...." });
   }
 });
 
-app.get("/myblogs/:id", verify, (req, res) => {
-  res.status(200).json({ message: "Connected out successfully" });
+app.get("/myblogs/:id", verify, async (req, res) => {
+  try {
+    const authorId = req.params.id;
+    const myBlogs = await prisma.blog.findMany({
+      where: {
+        authorId,
+      },
+    });
+    res.status(200).json({
+      data: [myBlogs],
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: "Something Went Wrong",
+    });
+  }
+});
+
+app.get("/updateblog/:id", verify, async (req, res) => {
+  try {
+    const blogId = req.params.id;
+    const UpdateBlog = await prisma.blog.findFirst({
+      where: {
+        blogId,
+      },
+    });
+    res.status(200).json({
+      data: [UpdateBlog],
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: "Something Went Wrong",
+    });
+  }
+});
+
+app.patch("/update/:id", verify, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { title, description, content, saveImage } = req.body;
+    const updatedBlog = await prisma.blog.update({
+      where: {
+        blogId: id,
+      },
+      data: {
+        saveImage: saveImage && saveImage,
+        title: title && title,
+        description: description && description,
+        content: content && content,
+      },
+    });
+    res.status(200).json({
+      message: "Your Post Was Updated Successfully",
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: "Something Went Wrong ....",
+    });
+  }
 });
 
 app.listen(3000, () => {
