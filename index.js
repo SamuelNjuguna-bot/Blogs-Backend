@@ -228,27 +228,53 @@ app.patch("/delete/:id", verify, async (req, res) => {
   });
 });
 
+app.get("/myprofile/:id", verify, getUserId, async (req, res) => {
+  const id = req.body.userId;
+  try {
+    const response = await prisma.User.findFirst({
+      where: {
+        id,
+      },
+    });
+    res.status(200).json({
+      response,
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: "Something Went Wrong !!!",
+    });
+  }
+});
 
-app.get("/myprofile/:id", verify, getUserId, async(req, res)=>{
-   const id = req.body.userId
-    try{
-      const response = await prisma.User.findFirst({
-        where:{
-          id
-        }
-          })
-          res.status(200).json({
-            response
-          })
+app.patch("/profileupdate/:id", verify, async (req, res) => {
+  const id = req.params.id;
+  const { firstName, lastName, username, email } = req.body;
+  try {
+    const updateProfiled = await prisma.User.update({
+      where: {
+        id,
+      },
+      data: {
+        firstName: firstName && firstName,
+        lastName: lastName && lastName,
+        username: username && username,
+        email: email && email,
+      },
+    });
+    if (updateProfiled) {
+      console.log(updateProfiled);
+      res.status(200).json({
+        updateProfiled,
+      });
+    } else {
+      res.status(500).json({ message: "Something Went Wrong" });
     }
-
-    catch(e){
-      res.status(500).json({
-        message:"Something Went Wrong !!!"
-      })
-    }
- 
-})
+  } catch (e) {
+    res.status(500).json({
+      message: "Something Went Wrong Please try again later",
+    });
+  }
+});
 app.listen(3000, () => {
   console.log("server running on port 3000...");
 });
