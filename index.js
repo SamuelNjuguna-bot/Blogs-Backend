@@ -1,14 +1,12 @@
 import express, { response } from "express";
 import { PrismaClient } from "@prisma/client";
 import cookieParser from "cookie-parser";
-import bcrypt from "bcrypt";
 import Validate from "./middlewares/validateUser.js";
 import jwt from "jsonwebtoken";
 import verify from "./prisma/middlewares/verifyUser.js";
 import getUserId from "./middlewares/getUserId.js";
+import bcrypt from "bcrypt";
 import cors from "cors";
-import { Select } from "@mui/material";
-
 const app = express();
 const prisma = new PrismaClient();
 app.use(
@@ -121,12 +119,11 @@ app.get("/articles/:id", verify, async (req, res) => {
   }
 });
 
-app.get("/bloglisting/:id", [verify, getUserId], async (req, res) => {
-  const { id } = req.params;
+app.get("/bloglisting", [verify, getUserId], async (req, res) => {
   const userId = req.body.userId;
   try {
     const fetched_Posts = await prisma.blog.findMany({
-      where: { blogId: id },
+      where: { isDeleted: false },
       select: {
         blogId: true,
         title: true,
@@ -154,8 +151,14 @@ app.get("/myblogs/:id", verify, async (req, res) => {
   try {
     const authorId = req.params.id;
     const myBlogs = await prisma.blog.findMany({
-      where: {
-        authorId,
+      where: { authorId, isDeleted: false },
+      select: {
+        blogId: true,
+        title: true,
+        description: true,
+        content: true,
+        saveImage: true,
+        updatedAt: true,
       },
     });
     res.status(200).json({
@@ -171,6 +174,7 @@ app.get("/myblogs/:id", verify, async (req, res) => {
 app.get("/updateblog/:id", verify, async (req, res) => {
   try {
     const blogId = req.params.id;
+    console.log("I was triggered");
     const UpdateBlog = await prisma.blog.findFirst({
       where: {
         blogId,
@@ -190,7 +194,7 @@ app.patch("/update/:id", verify, async (req, res) => {
   try {
     const id = req.params.id;
     const { title, description, content, saveImage } = req.body;
-    const updatedBlog = await prisma.blog.update({
+    await prisma.blog.update({
       where: {
         blogId: id,
       },
@@ -211,6 +215,40 @@ app.patch("/update/:id", verify, async (req, res) => {
   }
 });
 
+app.patch("/delete/:id", verify, async (req, res) => {
+  const blogId = req.params.id;
+
+  await prisma.blog.update({
+    where: {
+      blogId,
+    },
+    data: {
+      isDeleted: true,
+    },
+  });
+});
+
+
+app.get("/myprofile/:id", verify, getUserId, async(req, res)=>{
+   const id = req.body.userId
+    try{
+      const response = await prisma.User.findFirst({
+        where:{
+          id
+        }
+          })
+          res.status(200).json({
+            response
+          })
+    }
+
+    catch(e){
+      res.status(500).json({
+        message:"Something Went Wrong !!!"
+      })
+    }
+ 
+})
 app.listen(3000, () => {
   console.log("server running on port 3000...");
 });

@@ -31,6 +31,7 @@ model Blog{
   content String @map("blog_content")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("Updated_At")
+  isDeleted Boolean @default(false)
 
   authorId    String
   user        User     @relation(fields: [authorId], references: [id])
@@ -38,3 +39,5 @@ model Blog{
 
   @@map("blogs")
 }
+
+
